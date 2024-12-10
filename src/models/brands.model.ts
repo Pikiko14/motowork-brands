@@ -38,17 +38,10 @@ const BrandsSchema = new Schema<BrandsInterface>(
 BrandsSchema.index({ type: 1 }); // Índice para el campo type
 
 // propiedades virtuales para calcular los count_news
-BrandsSchema.virtual("count_news").get(function () {
-  const count = 10;
+BrandsSchema.virtual("count_items").get(() => {
+  const count = 1;
   return count;
 });
-
-
-BrandsSchema.virtual("count_used").get(function () {
-  const count = 5; //await SomeOtherModel.countDocuments({ categoryId: this._id, condition: "used" })
-  return count;
-});
-
 
 BrandsSchema.set("toObject", { virtuals: true });
 BrandsSchema.set("toJSON", { virtuals: true });
