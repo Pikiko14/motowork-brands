@@ -33,21 +33,21 @@ export class BrandsService extends BrandsRepository {
   ): Promise<void | ResponseHandler> {
     try {
       // validate file
-      const brands = (await this.create(body)) as BrandsInterface;
+      const brand = (await this.create(body)) as BrandsInterface;
 
       // set file
       if (file) {
         const imgBuffer = await this.utils.generateBuffer(file.path);
         const fileResponse = await this.cloudinaryService.uploadImage(imgBuffer, this.folder);
-        brands.icon = fileResponse.secure_url;
+        brand.icon = fileResponse.secure_url;
         await this.utils.deleteItemFromStorage(`${this.path}${file ? file.filename : ""}`);
-        await this.update(brands._id, brands);
+        await this.update(brand._id, brand);
       }
 
       // return response
       return ResponseHandler.successResponse(
         res,
-        brands,
+        brand,
         "Marca creada correctamente."
       );
     } catch (error: any) {
@@ -184,11 +184,13 @@ export class BrandsService extends BrandsRepository {
       if (file) {
         // delete old icon
         if (brand.icon) {
-          await this.utils.deleteItemFromStorage(brand.icon);
+          await this.cloudinaryService.deleteImageByUrl(brand.icon);
         }
+        const imgBuffer = await this.utils.generateBuffer(file.path);
+        const fileResponse = await this.cloudinaryService.uploadImage(imgBuffer, this.folder);
 
         // save new icon
-        brand.icon = `${this.path}${file ? file.filename : ""}`;
+        brand.icon = fileResponse.secure_url;
         await this.update(brand._id, brand);
       }
 
