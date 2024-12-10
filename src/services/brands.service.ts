@@ -191,6 +191,7 @@ export class BrandsService extends BrandsRepository {
 
         // save new icon
         brand.icon = fileResponse.secure_url;
+        await this.utils.deleteItemFromStorage(`${this.path}${file ? file.filename : ""}`);
         await this.update(brand._id, brand);
       }
 
