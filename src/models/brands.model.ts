@@ -51,13 +51,13 @@ BrandsSchema.pre(
   async function (next: any) {
     const queue = new TaskQueue('cloudinary');
     queue.setupListeners();
-    const category: BrandsInterface = await this.model
+    const brand: BrandsInterface = await this.model
       .findOne(this.getQuery())
       .exec();
     try {
-      if (category.icon) {
+      if (brand.icon) {
         await queue.addJob(
-          { taskType: 'deleteFile', payload: { icon: category.icon } },
+          { taskType: 'deleteFile', payload: { icon: brand.icon } },
           {
             attempts: 3,
             backoff: 5000,

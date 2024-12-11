@@ -191,15 +191,23 @@ export class BrandsService extends BrandsRepository {
       if (file) {
         // delete old icon
         if (brand.icon) {
-          await this.cloudinaryService.deleteImageByUrl(brand.icon);
+          await this.queue.addJob(
+            { taskType: 'deleteFile', payload: { icon: brand.icon } },
+            {
+              attempts: 3,
+              backoff: 5000,
+            }
+          );
         }
-        const imgBuffer = await this.utils.generateBuffer(file.path);
-        const fileResponse = await this.cloudinaryService.uploadImage(imgBuffer, this.folder);
 
-        // save new icon
-        brand.icon = fileResponse.secure_url;
-        await this.utils.deleteItemFromStorage(`${this.path}${file ? file.filename : ""}`);
-        await this.update(brand._id, brand);
+        // upload new file
+        await this.queue.addJob(
+          { taskType: 'uploadFile', payload: { file, brand } },
+          {
+            attempts: 3,
+            backoff: 5000,
+          }
+        );
       }
 
       // return response
