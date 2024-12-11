@@ -52,7 +52,8 @@ export class TaskQueue<T> extends BrandsRepository {
       await this.utils.deleteItemFromStorage(`${this.path}${file ? file.filename : ""}`);
       await this.update(brand._id, brand);
     } else {
-      console.log(`Tipo de tarea desconocido: ${job.data.taskType}`);
+      const { icon } = job.data.payload;
+      await this.cloudinaryService.deleteImageByUrl(icon);
     }
     console.log(`Tarea procesada con datos:`, job.data);
   }

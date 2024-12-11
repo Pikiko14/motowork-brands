@@ -3,9 +3,7 @@ import {
   BrandsInterface,
   TypeBrands,
 } from "../types/brands.interface";
-import { CloudinaryService } from "../services/cloudinary.service";
-
-const cloudinaryService = new CloudinaryService();
+import { TaskQueue } from '../queues/cloudinary.queue';
 
 const BrandsSchema = new Schema<BrandsInterface>(
   {
@@ -51,12 +49,20 @@ BrandsSchema.pre(
   "findOneAndDelete",
   { document: true, query: true },
   async function (next: any) {
+    const queue = new TaskQueue('cloudinary');
+    queue.setupListeners();
     const category: BrandsInterface = await this.model
       .findOne(this.getQuery())
       .exec();
     try {
       if (category.icon) {
-        await cloudinaryService.deleteImageByUrl(category.icon);
+        await queue.addJob(
+          { taskType: 'deleteFile', payload: { icon: category.icon } },
+          {
+            attempts: 3,
+            backoff: 5000,
+          }
+        );
       }
       next();
     } catch (error) {

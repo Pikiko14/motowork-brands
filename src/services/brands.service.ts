@@ -45,8 +45,8 @@ export class BrandsService extends BrandsRepository {
         await this.queue.addJob(
           { taskType: 'uploadFile', payload: { file, brand } },
           {
-            attempts: 3, // Reintentos si falla
-            backoff: 5000, // Espera 5 segundos entre reintentos
+            attempts: 3,
+            backoff: 5000,
           }
         );
       }
