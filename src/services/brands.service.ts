@@ -1,22 +1,26 @@
 import { Response } from "express";
 import { Utils } from "../utils/utils";
+import { TaskQueue } from '../queues/cloudinary.queue';
 import { CloudinaryService } from "./cloudinary.service";
 import { ResponseHandler } from "../utils/responseHandler";
-import { PaginationInterface } from "../types/req-ext.interface";
 import { BrandsInterface } from "../types/brands.interface";
+import { PaginationInterface } from "../types/req-ext.interface";
 import BrandsRepository from "../repositories/brands.repository";
 
 export class BrandsService extends BrandsRepository {
   private utils: Utils;
   public path: String;
+  public queue: any;
   public folder: string = "brands";
   public cloudinaryService: CloudinaryService;
 
   constructor(
   ) {
     super();
-    this.utils = new Utils();
     this.path = "/brands/";
+    this.utils = new Utils();
+    this.queue = new TaskQueue('cloudinary');
+    this.queue.setupListeners();
     this.cloudinaryService = new CloudinaryService();
   }
 
@@ -37,11 +41,14 @@ export class BrandsService extends BrandsRepository {
 
       // set file
       if (file) {
-        const imgBuffer = await this.utils.generateBuffer(file.path);
-        const fileResponse = await this.cloudinaryService.uploadImage(imgBuffer, this.folder);
-        brand.icon = fileResponse.secure_url;
-        await this.utils.deleteItemFromStorage(`${this.path}${file ? file.filename : ""}`);
-        await this.update(brand._id, brand);
+        // execute queue for upload
+        await this.queue.addJob(
+          { taskType: 'uploadFile', payload: { file, brand } },
+          {
+            attempts: 3, // Reintentos si falla
+            backoff: 5000, // Espera 5 segundos entre reintentos
+          }
+        );
       }
 
       // return response
