@@ -44,18 +44,19 @@ export class TaskQueue<T> extends BrandsRepository {
    * Lógica para manejar cada tarea
    */
   private async handleTask(job: Job<any>): Promise<void> {
+    let fileResponse = null;
     if (job.data.taskType === "uploadFile") {
       const { file, brand } = job.data.payload;
       const imgBuffer = await this.utils.generateBuffer(file.path);
-      const fileResponse = await this.cloudinaryService.uploadImage(imgBuffer, this.folder);
+      fileResponse = await this.cloudinaryService.uploadImage(imgBuffer, this.folder);
       brand.icon = fileResponse.secure_url;
       await this.utils.deleteItemFromStorage(`${this.path}${file ? file.filename : ""}`);
       await this.update(brand._id, brand);
     } else {
       const { icon } = job.data.payload;
-      await this.cloudinaryService.deleteImageByUrl(icon);
+      fileResponse = await this.cloudinaryService.deleteImageByUrl(icon);
     }
-    console.log(`Tarea procesada con datos:`, job.data);
+    console.log(`Tarea procesada con datos:`, fileResponse);
   }
 
   /**
