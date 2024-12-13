@@ -6,6 +6,7 @@ import { ResponseHandler } from "../utils/responseHandler";
 import { BrandsInterface } from "../types/brands.interface";
 import { PaginationInterface } from "../types/req-ext.interface";
 import BrandsRepository from "../repositories/brands.repository";
+import { ResponseRequestInterface } from "../types/response.interface";
 
 export class BrandsService extends BrandsRepository {
   private utils: Utils;
@@ -100,7 +101,8 @@ export class BrandsService extends BrandsRepository {
       }
 
       // do query
-      const brands = await this.paginate(queryObj, skip, perPage, query.sortBy, query.order);
+      const fields = query.fields ? query.fields.split(',') : [];
+      const brands = await this.paginate(queryObj, skip, perPage, query.sortBy, query.order, fields);
 
       // return data
       return ResponseHandler.successResponse(
