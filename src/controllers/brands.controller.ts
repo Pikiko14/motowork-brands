@@ -39,7 +39,7 @@ export class BrandsController {
   };
 
   /**
-   * Get categories
+   * Get brands
    * @param req Express request
    * @param res Express response
    * @returns Promise<void>
@@ -115,10 +115,10 @@ export class BrandsController {
       // get body
       const body = matchedData(req) as BrandsInterface;
 
-      // get category params id
+      // get brand params id
       const { id } = req.params;
 
-      // store category
+      // store brand
       return await this.service.updateBrands(
         res,
         id,
