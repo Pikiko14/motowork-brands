@@ -81,5 +81,14 @@ router.put(
   controller.changeBrandStatus
 );
 
+/**
+ * Get brands
+ */
+router.get(
+  "/list/from-web",
+  PaginationValidator,
+  controller.getBrands
+);
+
 // export router
 export { router };
