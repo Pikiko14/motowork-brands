@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { Utils } from "../utils/utils";
 import { TaskQueue } from '../queues/cloudinary.queue';
+import { RedisImplement } from "./cache/redis.services";
 import { CloudinaryService } from "./cloudinary.service";
 import { ResponseHandler } from "../utils/responseHandler";
 import { BrandsInterface } from "../types/brands.interface";
@@ -52,6 +53,9 @@ export class BrandsService extends BrandsRepository {
         );
       }
 
+      // clear cache
+      await this.clearCacheInstances();
+
       // return response
       return ResponseHandler.successResponse(
         res,
@@ -74,7 +78,19 @@ export class BrandsService extends BrandsRepository {
     query: PaginationInterface
   ): Promise<void | ResponseHandler> {
     try {
-        // validamos la data de la paginacion
+      // validate in cache
+      const redisCache = RedisImplement.getInstance();
+      const cacheKey = `brands:${JSON.stringify(query)}`;
+      const cachedData = await redisCache.getItem(cacheKey);
+      if (cachedData) {
+        return ResponseHandler.successResponse(
+          res,
+          cachedData,
+          "Listado de marcas (desde caché)."
+        );
+      }
+
+      // validamos la data de la paginacion
       const page: number = (query.page as number) || 1;
       const perPage: number = (query.perPage as number) || 7;
       const skip = (page - 1) * perPage;
@@ -103,6 +119,17 @@ export class BrandsService extends BrandsRepository {
       // do query
       const fields = query.fields ? query.fields.split(',') : [];
       const brands = await this.paginate(queryObj, skip, perPage, query.sortBy, query.order, fields);
+
+      // Guardar la respuesta en Redis por 10 minutos
+      await redisCache.setItem(
+        cacheKey,
+        {
+          brands: brands.data,
+          totalItems: brands.totalItems,
+          totalPages: brands.totalPages,
+        },
+        600
+      );
 
       // return data
       return ResponseHandler.successResponse(
@@ -160,6 +187,9 @@ export class BrandsService extends BrandsRepository {
       // get brand
       const brand = await this.delete(id);
 
+      // clear cache
+      await this.clearCacheInstances();
+
       // return data
       return ResponseHandler.successResponse(
         res,
@@ -212,6 +242,9 @@ export class BrandsService extends BrandsRepository {
         );
       }
 
+      // clear cache
+      await this.clearCacheInstances();
+
       // return response
       return ResponseHandler.successResponse(
         res,
@@ -244,6 +277,9 @@ export class BrandsService extends BrandsRepository {
         await this.update(brand._id, brand);
       }
 
+      // clear cache
+      await this.clearCacheInstances();
+
       // return response
       return ResponseHandler.successResponse(
         res,
@@ -252,6 +288,16 @@ export class BrandsService extends BrandsRepository {
       );
     } catch (error: any) {
       throw new Error(error.message);
+    }
+  }
+
+  // clear cache instances
+  public async clearCacheInstances() {
+    const redisCache = RedisImplement.getInstance();
+    const keys = await redisCache.getKeys("brands:*");
+    if (keys.length > 0) {
+      await redisCache.deleteKeys(keys);
+      console.log(`🗑️ Cache de marcas limpiado`);
     }
   }
 }
